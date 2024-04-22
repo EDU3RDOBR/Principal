@@ -5,95 +5,115 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB; // Importe o facade DB
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\Rule;
 
 class ShowController extends Controller
 {
     public function selectTable()
     {
-        // Assume-se que o esquema padrão seja 'public'. Ajuste conforme necessário.
         $schema = config('database.connections.'.config('database.default').'.schema', 'public');
-    
         $excludedTables = ['migrations', 'personal_access_tokens'];
-    
-        $tables = \Illuminate\Support\Facades\DB::table('information_schema.tables')
+        $tables = DB::table('information_schema.tables')
                     ->where('table_schema', $schema)
                     ->where('table_type', 'BASE TABLE')
                     ->whereNotIn('table_name', $excludedTables)
                     ->get(['table_name']);
-    
         return view('select_table', ['tables' => $tables]);
     }
-    
 
-    public function showTable($table)
+    public function showTable(Request $request, $table)
     {
-        $model = \Illuminate\Support\Str::studly(\Illuminate\Support\Str::singular($table));
+        $model = Str::studly(Str::singular($table));
         $modelClass = 'App\\Models\\' . $model;
-    
-        // Verifica se a tabela existe usando o Laravel Schema Builder
-        if (!\Illuminate\Support\Facades\Schema::hasTable($table)) {
+
+        if (!Schema::hasTable($table)) {
             return redirect()->back()->with('error', 'A tabela não existe.');
         }
-    
+
+        $perPage = $request->input('perPage', 10);
+        $perPageOptions = [10, 20, 50, 100, 500];
+
         if (class_exists($modelClass)) {
-            // Tenta recuperar os dados da tabela/modelo com paginação.
             try {
-                $data = $modelClass::paginate(10); // 10 itens por página, você pode ajustar conforme necessário
+                $data = $modelClass::paginate($perPage);
             } catch (\Exception $e) {
-                // Log do erro para depuração
-                \Log::error("Erro ao acessar a tabela através do modelo {$modelClass}: {$e->getMessage()}");
-                return redirect()->back()->with('error', 'Erro ao acessar os dados da tabela.');
+                return redirect()->back()->with('error', "Erro ao acessar a tabela através do modelo {$modelClass}: {$e->getMessage()}");
             }
         } else {
-            // Se o modelo não existir, tenta recuperar os dados diretamente do banco de dados com paginação.
             try {
-                $data = \Illuminate\Support\Facades\DB::table($table)->paginate(10); // 10 itens por página, você pode ajustar conforme necessário
+                $data = DB::table($table)->paginate($perPage);
             } catch (\Exception $e) {
-                \Log::error("Erro ao acessar a tabela {$table} diretamente do banco de dados: {$e->getMessage()}");
-                return redirect()->back()->with('error', 'Erro ao acessar os dados da tabela diretamente do banco de dados.');
+                return redirect()->back()->with('error', "Erro ao acessar a tabela {$table} diretamente do banco de dados: {$e->getMessage()}");
+            }
+        }
+
+        return view('show_table', ['data' => $data, 'modelName' => $model, 'perPage' => $perPage, 'perPageOptions' => $perPageOptions]);
+    }
+
+    public function editView($modelName, $id)
+    {
+        $normalizedModelName = strtolower($modelName);
+        $modelFiles = scandir(app_path('Models'));
+        $modelClassName = null;
+
+        foreach ($modelFiles as $file) {
+            if (strtolower(pathinfo($file, PATHINFO_FILENAME)) === $normalizedModelName) {
+                $modelClassName = pathinfo($file, PATHINFO_FILENAME);
+                break;
+            }
+        }
+
+        if (!$modelClassName) {
+            abort(404, "Modelo não encontrado.");
+        }
+
+        $modelClass = 'App\\Models\\' . $modelClassName;
+        $data = $modelClass::findOrFail($id);
+        return view('update_data', ['model' => $modelClassName, 'row' => $data]);
+    }
+
+    public function editData(Request $request, $modelName, $id)
+    {
+        $normalizedModelName = strtolower($modelName);
+        $modelFiles = scandir(app_path('Models'));
+        $modelClassName = null;
+    
+        foreach ($modelFiles as $file) {
+            if (strtolower(pathinfo($file, PATHINFO_FILENAME)) === $normalizedModelName) {
+                $modelClassName = pathinfo($file, PATHINFO_FILENAME);
+                break;
             }
         }
     
-        return view('show_table', ['data' => $data, 'modelName' => $model]);
-    }
-
-    public function index(Request $request, $table)
-    {
-        // Transforma o nome da tabela em um nome de modelo
-        $modelName = Str::studly(Str::singular($table));
-        $modelClass = 'App\\Models\\' . $modelName;
-    
-        // Verifica se o modelo existe
-        if (!class_exists($modelClass)) {
-            return redirect()->back()->with('error', 'O modelo não existe.');
+        if (!$modelClassName) {
+            abort(404, "Modelo não encontrado.");
         }
     
-        // Obtém as opções de quantidade por página
-        $perPageOptions = [5, 10, 15, 20];
+        $modelClass = 'App\\Models\\' . $modelClassName;
     
-        // Obtém a quantidade por página atual, ou usa o padrão (10)
-        $perPage = $request->query('perPage', 15);
-    
-        // Obtém os dados paginados do modelo
         try {
-            $data = $modelClass::paginate($perPage);
-        } catch (\Exception $e) {
-            \Log::error("Erro ao acessar a tabela através do modelo {$modelClass}: {$e->getMessage()}");
-            return redirect()->back()->with('error', 'Erro ao acessar os dados da tabela.');
+            $data = $modelClass::findOrFail($id);
+        } catch (ModelNotFoundException $e) {
+            return redirect()->back()->with('error', "Registro não encontrado.");
         }
     
-        // Retorna a view com os dados e as opções de quantidade por página
-        return view('show_table', compact('data', 'perPageOptions', 'perPage', 'modelName'));
-    }
-    public function editData($modelName, $id)
-    {
-        // Obter os dados da tabela genérica com base no $id
-        $row = DB::table($modelName)->find($id);
+        if ($request->isMethod('post')) {
+            $validatedData = $request->validate([
+                // Defina as regras de validação para os campos do modelo aqui
+            ]);
     
-        // Passar os dados para a view
-        return view('edit_data', compact('row'));
-    }
+            try {
+                $data->fill($validatedData)->save();
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', "Erro ao atualizar o registro: {$e->getMessage()}");
+            }
     
+            return redirect()->back()->with('success', "Registro atualizado com sucesso.");
+        }
+    
+        return view('update_data', ['model' => $modelClassName, 'row' => $data]);
+    }
     
 }

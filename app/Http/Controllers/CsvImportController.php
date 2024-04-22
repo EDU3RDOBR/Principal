@@ -26,7 +26,8 @@ class CsvImportController extends Controller
         $modelPath = app_path("Models/{$modelName}.php");
         $modelContent = file_get_contents($modelPath);
         $guardedProperty = "protected \$guarded = [];\n";
-        $modelContent = str_replace("class {$modelName} extends Model\n{", "class {$modelName} extends Model\n{\n    {$guardedProperty}", $modelContent);
+        $tableProperty = "protected \$table = '{$tableName}';\n";
+        $modelContent = str_replace("class {$modelName} extends Model\n{", "class {$modelName} extends Model\n{\n    {$guardedProperty}\n    {$tableProperty}", $modelContent);
         file_put_contents($modelPath, $modelContent);
 
         $this->createMigrationFromCsv($csvFile, $tableName);
@@ -82,12 +83,6 @@ class CsvImportController extends Controller
         foreach ($headers as $header) {
             $columns .= "\$table->string('" . Str::snake($header) . "')->nullable();\n            ";
         }
-
-        // Add an "s" at the end of the table name if it doesn't already have one
-        if (substr($tableName, -1) !== 's') {
-            $tableName .= 's';
-        }
-
         $migrationStub = file_get_contents(database_path('stubs/migration.stub'));
         $migrationStub = str_replace('{{tableName}}', $tableName, $migrationStub);
         $migrationStub = str_replace('{{columns}}', $columns, $migrationStub);

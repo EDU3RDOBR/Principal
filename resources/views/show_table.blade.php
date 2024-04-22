@@ -1,3 +1,4 @@
+{{-- Em resources/views/show_table.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -14,35 +15,51 @@
                     @else
                         <div class="flex justify-end mb-4">
                             <label for="perPage" class="mr-2">Exibir por página:</label>
-                            <select id="perPage" name="perPage" class="border border-gray-300 rounded px-2 py-1">
-                                @isset($perPageOptions)
-                                    @foreach($perPageOptions as $option)
-                                        <option value="{{ $option }}" @if($option == $perPage) selected @endif>{{ $option }}</option>
-                                    @endforeach
-                                @endisset
+                            <select id="perPage" name="perPage" class="border border-gray-300 rounded px-2 py-1" onchange="changePerPage()">
+                                @foreach($perPageOptions as $option)
+                                    <option value="{{ $option }}" {{ $option == $perPage ? 'selected' : '' }}>{{ $option }}</option>
+                                @endforeach
                             </select>
                         </div>
 
-                        <table>
-                            <thead>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <th>Selecionar</th>
-                                    @foreach ($data->first() as $key => $value)
-                                        <th>{{ $key }}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        ID
+                                    </th>
+                                    @foreach (array_keys((array)$data->first()) as $key)
+                                        @if (!in_array($key, ['id', 'created_at', 'updated_at']))
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ ucfirst(str_replace('_', ' ', $key)) }}
+                                            </th>
+                                        @endif
                                     @endforeach
-                                    <th>Ações</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Ações
+                                    </th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($data as $row)
                                     <tr>
-                                        <td><input type="checkbox" name="selected[]" value="{{ $row->id }}"></td>
-                                        @foreach ($row as $value)
-                                            <td>{{ $value }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ $row->id }}
+                                        </td>
+                                        @foreach ((array)$row as $key => $value)
+                                            @if (!in_array($key, ['id', 'created_at', 'updated_at']))
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $value }}
+                                                </td>
+                                            @endif
                                         @endforeach
-                                        <td>
-                                            <a href="{{ route('edit-data', $row->id) }}">Editar</a>
-                                            <a href="{{ route('delete-data', $row->id) }}">Excluir</a>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="{{ route('edit-data', ['modelName' => $modelName, 'id' => $row->id]) }}" class="text-indigo-600 hover:text-indigo-900">Editar</a>
+                                            <form action="{{ route('delete-data', ['id' => $row->id]) }}" method="POST" style="display: inline;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900 ml-4">Excluir</button>
+                                            </form>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -57,11 +74,11 @@
 </x-app-layout>
 
 <script>
-    document.getElementById('perPage').addEventListener('change', function() {
-        var selectedValue = this.value;
-        var currentUrl = window.location.href;
-        var urlWithoutParams = currentUrl.split('?')[0];
-        var newUrl = urlWithoutParams + '?perPage=' + selectedValue;
+    function changePerPage() {
+        const selectedValue = document.getElementById('perPage').value;
+        const currentUrl = window.location.href;
+        const urlWithoutParams = currentUrl.split('?')[0];
+        const newUrl = urlWithoutParams + '?perPage=' + selectedValue;
         window.location.href = newUrl;
-    });
+    }
 </script>
