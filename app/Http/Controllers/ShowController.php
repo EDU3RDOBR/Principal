@@ -37,13 +37,13 @@ class ShowController extends Controller
 
         if (class_exists($modelClass)) {
             try {
-                $data = $modelClass::paginate($perPage);
+                $data = $modelClass::orderBy('id', 'asc')->paginate($perPage);
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', "Erro ao acessar a tabela através do modelo {$modelClass}: {$e->getMessage()}");
             }
         } else {
             try {
-                $data = DB::table($table)->paginate($perPage);
+                $data = DB::table($table)->orderBy('id', 'asc')->paginate($perPage);
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', "Erro ao acessar a tabela {$table} diretamente do banco de dados: {$e->getMessage()}");
             }
@@ -99,21 +99,53 @@ class ShowController extends Controller
             return redirect()->back()->with('error', "Registro não encontrado.");
         }
     
-        if ($request->isMethod('post')) {
-            $validatedData = $request->validate([
-                // Defina as regras de validação para os campos do modelo aqui
-            ]);
+        $columns = Schema::getColumnListing($data->getTable());
+        $rules = array_fill_keys(array_diff($columns, ['id', 'created_at', 'updated_at']), 'required');
+    
+        if ($request->isMethod('put')) {
+            $validatedData = $request->validate($rules);
     
             try {
                 $data->fill($validatedData)->save();
+                return redirect()->route('show.table', ['table' => $data->getTable()])->with('success', "Registro atualizado com sucesso.");
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', "Erro ao atualizar o registro: {$e->getMessage()}");
             }
-    
-            return redirect()->back()->with('success', "Registro atualizado com sucesso.");
         }
     
-        return view('update_data', ['model' => $modelClassName, 'row' => $data]);
+        return view('show_table', ['data' => $data, 'modelName' => $model, 'perPage' => $perPage, 'perPageOptions' => $perPageOptions]);
     }
+    public function deleteData(Request $request, $modelName, $id)
+    {
+        $normalizedModelName = strtolower($modelName);
+        $modelFiles = scandir(app_path('Models'));
+        $modelClassName = null;
+    
+        foreach ($modelFiles as $file) {
+            if (strtolower(pathinfo($file, PATHINFO_FILENAME)) === $normalizedModelName) {
+                $modelClassName = pathinfo($file, PATHINFO_FILENAME);
+                break;
+            }
+        }
+    
+        if (!$modelClassName) {
+            return redirect()->back()->with('error', 'Modelo não encontrado.');
+        }
+    
+        $modelClass = 'App\\Models\\' . $modelClassName;
+    
+        try {
+            $data = $modelClass::findOrFail($id);
+            $data->delete();
+            return redirect()->route('show.table',  ['table' => $data->getTable()])->with('success', 'Registro excluído com sucesso.');
+        } catch (ModelNotFoundException $e) {
+            return redirect()->back()->with('error', 'Registro não encontrado.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', "Erro ao excluir o registro: {$e->getMessage()}");
+        }
+    }
+    
+    
+
     
 }

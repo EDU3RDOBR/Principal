@@ -11,7 +11,7 @@
                 <div class="p-6 bg-white border-b border-gray-200">
                     <h1>Editar Dados</h1>
                     @if(isset($model) && isset($row) && $row)
-                        <form action="{{ url('/update-data/' . $model . '/' . $row->id) }}" method="POST">
+                        <form action="{{ route('edit-data.put', ['modelName' => $model, 'id' => $row->id]) }}" method="POST">
                             @csrf
                             <input type="hidden" name="_method" value="PUT">
                             @foreach ($row->getAttributes() as $key => $value)
