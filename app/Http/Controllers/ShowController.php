@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Validation\Rule;
 
 class ShowController extends Controller
 {
@@ -25,9 +23,6 @@ class ShowController extends Controller
 
     public function showTable(Request $request, $table)
     {
-        $model = Str::studly(Str::singular($table));
-        $modelClass = 'App\\Models\\' . $model;
-
         if (!Schema::hasTable($table)) {
             return redirect()->back()->with('error', 'A tabela não existe.');
         }
@@ -35,117 +30,72 @@ class ShowController extends Controller
         $perPage = $request->input('perPage', 10);
         $perPageOptions = [10, 20, 50, 100, 500];
 
-        if (class_exists($modelClass)) {
-            try {
-                $data = $modelClass::orderBy('id', 'asc')->paginate($perPage);
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', "Erro ao acessar a tabela através do modelo {$modelClass}: {$e->getMessage()}");
-            }
-        } else {
-            try {
-                $data = DB::table($table)->orderBy('id', 'asc')->paginate($perPage);
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', "Erro ao acessar a tabela {$table} diretamente do banco de dados: {$e->getMessage()}");
-            }
-        }
-
-        return view('show_table', ['data' => $data, 'modelName' => $model, 'perPage' => $perPage, 'perPageOptions' => $perPageOptions]);
-    }
-
-    public function editView($modelName, $id)
-    {
-        $normalizedModelName = strtolower($modelName);
-        $modelFiles = scandir(app_path('Models'));
-        $modelClassName = null;
-
-        foreach ($modelFiles as $file) {
-            if (strtolower(pathinfo($file, PATHINFO_FILENAME)) === $normalizedModelName) {
-                $modelClassName = pathinfo($file, PATHINFO_FILENAME);
-                break;
-            }
-        }
-
-        if (!$modelClassName) {
-            abort(404, "Modelo não encontrado.");
-        }
-
-        $modelClass = 'App\\Models\\' . $modelClassName;
-        $data = $modelClass::findOrFail($id);
-        return view('update_data', ['model' => $modelClassName, 'row' => $data]);
-    }
-
-    public function editData(Request $request, $modelName, $id)
-    {
-        $normalizedModelName = strtolower($modelName);
-        $modelFiles = scandir(app_path('Models'));
-        $modelClassName = null;
-    
-        foreach ($modelFiles as $file) {
-            if (strtolower(pathinfo($file, PATHINFO_FILENAME)) === $normalizedModelName) {
-                $modelClassName = pathinfo($file, PATHINFO_FILENAME);
-                break;
-            }
-        }
-    
-        if (!$modelClassName) {
-            abort(404, "Modelo não encontrado.");
-        }
-    
-        $modelClass = 'App\\Models\\' . $modelClassName;
-    
+        
         try {
-            $data = $modelClass::findOrFail($id);
-        } catch (ModelNotFoundException $e) {
+            $data = DB::table($table)->orderBy('id', 'asc')->paginate($perPage);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', "Erro ao acessar a tabela {$table} diretamente do banco de dados: {$e->getMessage()}");
+        }
+
+        return view('show_table', ['data' => $data, 'tableName' => $table, 'perPage' => $perPage, 'perPageOptions' => $perPageOptions]);
+    }
+
+    public function editView($table, $id)
+    {
+        if (!Schema::hasTable($table)) {
+            abort(404, "Tabela não encontrada.");
+        }
+
+        try {
+            $data = DB::table($table)->where('id', $id)->first();
+            if (!$data) {
+                abort(404, "Registro não encontrado na tabela.");
+            }
+        } catch (\Exception $e) {
+            abort(404, "Erro ao acessar a tabela: " . $e->getMessage());
+        }
+
+        return view('update_data', ['table' => $table, 'row' => $data]);
+    }
+
+    public function editData(Request $request, $table, $id)
+    {
+        if (!Schema::hasTable($table)) {
+            return redirect()->back()->with('error', 'Tabela não encontrada.');
+        }
+
+        $data = DB::table($table)->where('id', $id)->first();
+        if (!$data) {
             return redirect()->back()->with('error', "Registro não encontrado.");
         }
-    
-        $columns = Schema::getColumnListing($data->getTable());
+
+        $columns = Schema::getColumnListing($table);
         $rules = array_fill_keys(array_diff($columns, ['id', 'created_at', 'updated_at']), 'required');
-    
+
         if ($request->isMethod('put')) {
             $validatedData = $request->validate($rules);
-    
             try {
-                $data->fill($validatedData)->save();
-                return redirect()->route('show.table', ['table' => $data->getTable()])->with('success', "Registro atualizado com sucesso.");
+                DB::table($table)->where('id', $id)->update($validatedData);
+                return redirect()->route('show.table', ['table' => $table])->with('success', "Registro atualizado com sucesso.");
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', "Erro ao atualizar o registro: {$e->getMessage()}");
             }
         }
-    
-        return view('show_table', ['data' => $data, 'modelName' => $model, 'perPage' => $perPage, 'perPageOptions' => $perPageOptions]);
+
+        return view('update_data', ['table' => $table, 'row' => $data]);
     }
-    public function deleteData(Request $request, $modelName, $id)
+
+    public function deleteData(Request $request, $table, $id)
     {
-        $normalizedModelName = strtolower($modelName);
-        $modelFiles = scandir(app_path('Models'));
-        $modelClassName = null;
-    
-        foreach ($modelFiles as $file) {
-            if (strtolower(pathinfo($file, PATHINFO_FILENAME)) === $normalizedModelName) {
-                $modelClassName = pathinfo($file, PATHINFO_FILENAME);
-                break;
-            }
+        if (!Schema::hasTable($table)) {
+            return redirect()->back()->with('error', 'Tabela não encontrada.');
         }
-    
-        if (!$modelClassName) {
-            return redirect()->back()->with('error', 'Modelo não encontrado.');
-        }
-    
-        $modelClass = 'App\\Models\\' . $modelClassName;
-    
+
         try {
-            $data = $modelClass::findOrFail($id);
-            $data->delete();
-            return redirect()->route('show.table',  ['table' => $data->getTable()])->with('success', 'Registro excluído com sucesso.');
-        } catch (ModelNotFoundException $e) {
-            return redirect()->back()->with('error', 'Registro não encontrado.');
+            DB::table($table)->where('id', $id)->delete();
+            return redirect()->route('show.table',  ['table' => $table])->with('success', 'Registro excluído com sucesso.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', "Erro ao excluir o registro: {$e->getMessage()}");
         }
     }
-    
-    
-
-    
 }

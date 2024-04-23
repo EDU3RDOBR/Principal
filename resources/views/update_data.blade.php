@@ -9,12 +9,26 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
+                @if(session('success'))
+                <div class="bg-green-200 border-l-4 border-green-600 text-green-800 p-4 mb-4" role="alert">
+                    <p class="font-bold">Sucesso!</p>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="bg-red-200 border-l-4 border-red-600 text-red-800 p-4 mb-4" role="alert">
+                    <p class="font-bold">Erro!</p>
+                    <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
                     <h1>Editar Dados</h1>
-                    @if(isset($model) && isset($row) && $row)
-                        <form action="{{ route('edit-data.put', ['modelName' => $model, 'id' => $row->id]) }}" method="POST">
+                    @if(isset($table) && isset($row) && $row)
+                        <form action="{{ route('edit-data.put', ['table' => $table, 'id' => $row->id]) }}" method="POST">
                             @csrf
                             <input type="hidden" name="_method" value="PUT">
-                            @foreach ($row->getAttributes() as $key => $value)
+                            @foreach (get_object_vars($row) as $key => $value)
                                 @if (!in_array($key, ['id', 'created_at', 'updated_at']))
                                     <div class="mb-4">
                                         <label for="{{ $key }}" class="block text-sm font-medium text-gray-700">{{ ucfirst(str_replace('_', ' ', $key)) }}</label>

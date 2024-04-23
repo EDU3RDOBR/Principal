@@ -9,6 +9,20 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
+                @if(session('success'))
+                <div class="bg-green-200 border-l-4 border-green-600 text-green-800 p-4 mb-4" role="alert">
+                    <p class="font-bold">Sucesso!</p>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="bg-red-200 border-l-4 border-red-600 text-red-800 p-4 mb-4" role="alert">
+                    <p class="font-bold">Erro!</p>
+                    <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
                     <form action="{{ route('upload.csv.process') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div>

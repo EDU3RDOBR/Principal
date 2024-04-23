@@ -10,13 +10,13 @@ Route::get('/', [ShowController::class, 'selectTable'])->name('select.table');
 Route::get('/show-table/{table}', [ShowController::class, 'showTable'])->name('show.table');
 
 // Rota GET para visualização dos dados a serem editados
-Route::get('/edit-data/{modelName}/{id}', [ShowController::class, 'editView'])->name('edit-data');
+Route::get('/edit-data/{table}/{id}', [ShowController::class, 'editView'])->name('edit-data');
 
 // Rota para deletar dados
-Route::delete('/delete-data/{modelName}/{id}', [ShowController::class, 'deleteData'])->name('delete-data');
+Route::delete('/delete-data/{table}/{id}', [ShowController::class, 'deleteData'])->name('delete-data');
 
 // Rota POST para editar dados
-Route::put('/edit-data/{modelName}/{id}', [ShowController::class, 'editData'])->name('edit-data.put');
+Route::put('/edit-data/{table}/{id}', [ShowController::class, 'editData'])->name('edit-data.put');
 
 Route::get('/upload-csv', function () {
     return view('upload_csv');
