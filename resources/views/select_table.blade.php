@@ -52,6 +52,13 @@
                             </div>
                             @endforeach
                         </div>
+                        <br>
+                        <div class="mb-4 p-4 shadow rounded-lg border border-gray-200 bg-gray-50">
+                            <h2 class="text-lg mb-2 text-gray-700 font-bold">Upload de API</h2>
+                            <p>
+                                <a href="{{ route('import.data') }}" class="text-gray-600 hover:text-gray-800 transition-colors duration-200">Fazer upload de dados via API</a>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

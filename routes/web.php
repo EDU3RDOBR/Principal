@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ShowController;
+use App\Http\Controllers\ImportControllerAPI;
 use App\Http\Controllers\CsvImportController;
 
 // Rota inicial que lista as tabelas
@@ -28,3 +29,8 @@ Route::post('/upload-csv', [CsvImportController::class, 'upload'])->name('upload
 Route::post('/import-csv', [CsvImportController::class, 'import'])->name('import');
 Route::get('/cancel-import', [CsvImportController::class, 'cancelImport'])->name('cancel-import');
 Route::get('/cancel-import2', [CsvImportController::class, 'cancelImports'])->name('cancel-import2');
+
+
+// IMPORTAR POR API
+
+Route::get('/import-data', [ImportControllerAPI::class, 'importData'])->name('import.data');

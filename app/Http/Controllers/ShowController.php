@@ -26,19 +26,23 @@ class ShowController extends Controller
         if (!Schema::hasTable($table)) {
             return redirect()->back()->with('error', 'A tabela não existe.');
         }
-
-        $perPage = $request->input('perPage', 10);
+    
         $perPageOptions = [10, 20, 50, 100, 500];
-
-        
+        $perPage = $request->input('perPage', session('perPage', $perPageOptions[0]));
+    
         try {
-            $data = DB::table($table)->orderBy('id', 'asc')->paginate($perPage);
+            $query = DB::table($table)->orderBy('id', 'asc');
+            $data = $query->paginate($perPage);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', "Erro ao acessar a tabela {$table} diretamente do banco de dados: {$e->getMessage()}");
         }
-
+    
+        $request->session()->put('perPage', $perPage);
+    
         return view('show_table', ['data' => $data, 'tableName' => $table, 'perPage' => $perPage, 'perPageOptions' => $perPageOptions]);
     }
+    
+    
 
     public function editView($table, $id)
     {
