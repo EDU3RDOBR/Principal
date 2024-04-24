@@ -132,6 +132,14 @@
 </x-app-layout>
 
 <script>
+    function changePerPage() {
+        const selectedValue = document.getElementById('perPage').value;
+        const currentUrl = window.location.href;
+        const urlWithoutParams = currentUrl.split('?')[0];
+        const newUrl = urlWithoutParams + '?perPage=' + selectedValue;
+        window.location.href = newUrl;
+    }
+
     document.getElementById('checkAll').addEventListener('change', function() {
         let checkboxes = document.querySelectorAll('.checkItem');
         for (let checkbox of checkboxes) {
