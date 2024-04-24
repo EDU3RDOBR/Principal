@@ -11,9 +11,5 @@ class teste66 extends Model
 
     protected $table = 'teste66';
 
-    protected $guarded = [];
-
-    protected $table = 'teste66';
-
     use HasFactory;
 }
