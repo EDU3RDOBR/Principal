@@ -98,4 +98,21 @@ class ShowController extends Controller
             return redirect()->back()->with('error', "Erro ao excluir o registro: {$e->getMessage()}");
         }
     }
+
+    public function deleteMultiple(Request $request, $table)
+    {
+        // Obter os IDs dos registros a serem deletados
+        $ids = $request->input('ids', []);
+    
+        // Verificar se há IDs para deletar
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'Nenhum registro foi selecionado para exclusão.');
+        }
+    
+        // Realizar a exclusão dos registros
+        DB::table($table)->whereIn('id', $ids)->delete();
+    
+        return redirect()->back()->with('success', 'Registros excluídos com sucesso.');
+    }
+    
 }

@@ -15,6 +15,8 @@ Route::get('/edit-data/{table}/{id}', [ShowController::class, 'editView'])->name
 // Rota para deletar dados
 Route::delete('/delete-data/{table}/{id}', [ShowController::class, 'deleteData'])->name('delete-data');
 
+Route::delete('/delete-multiple/{table}', [ShowController::class, 'deleteMultiple'])->name('delete-multiple');
+
 // Rota POST para editar dados
 Route::put('/edit-data/{table}/{id}', [ShowController::class, 'editData'])->name('edit-data.put');
 
@@ -25,3 +27,4 @@ Route::get('/upload-csv', function () {
 Route::post('/upload-csv', [CsvImportController::class, 'upload'])->name('upload.csv.process');
 Route::post('/import-csv', [CsvImportController::class, 'import'])->name('import');
 Route::get('/cancel-import', [CsvImportController::class, 'cancelImport'])->name('cancel-import');
+Route::get('/cancel-import2', [CsvImportController::class, 'cancelImports'])->name('cancel-import2');

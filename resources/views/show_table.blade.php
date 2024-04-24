@@ -15,10 +15,10 @@
                         @csrf
                         <div>
                             <label for="csv_file" class="block text-sm font-medium text-gray-700">Selecione o arquivo CSV:</label>
-                            <input type="file" id="csv_file" name="csv_file" accept=".csv" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <input type="file" id="csv_file" name="csv_file" accept=".csv" required class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                         </div>
                         <br>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
                             Importar CSV
                         </button>
                     </form>
@@ -44,54 +44,67 @@
                     @if($data->isEmpty())
                         <p>Nenhum dado encontrado para exibir.</p>
                     @else
-                        <div class="flex justify-end mb-4">
-                            <label for="perPage" class="mr-2">Exibir por página:</label>
-                            <select id="perPage" name="perPage" class="border border-gray-300 rounded px-10 py-2" onchange="changePerPage()">
-                                @foreach($perPageOptions as $option)
-                                    <option value="{{ $option }}" {{ $option == $perPage ? 'selected' : '' }}>{{ $option }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        ID
-                                    </th>
-                                    @foreach (array_keys((array)$data->first()) as $key)
-                                        @if (!in_array($key, ['id', 'created_at', 'updated_at']))
-                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                {{ ucfirst(str_replace('_', ' ', $key)) }}
-                                            </th>
-                                        @endif
+                        <form method="POST" action="{{ route('delete-multiple', ['table' => $tableName]) }}">
+                            @csrf
+                            @method('DELETE')
+                            <div class="flex justify-end mb-4">
+                                <label for="perPage" class="mr-2">Exibir por página:</label>
+                                <select id="perPage" name="perPage" class="border border-gray-300 rounded px-10 py-2" onchange="changePerPage()">
+                                    @foreach($perPageOptions as $option)
+                                        <option value="{{ $option }}" {{ $option == $perPage ? 'selected' : '' }}>{{ $option }}</option>
                                     @endforeach
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Ações
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach ($data as $row)
+                                </select>
+                            </div>
+
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $row->id }}
-                                        </td>
-                                        @foreach ((array)$row as $key => $value)
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <input type="checkbox" id="checkAll">
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            ID
+                                        </th>
+                                        @foreach (array_keys((array)$data->first()) as $key)
                                             @if (!in_array($key, ['id', 'created_at', 'updated_at']))
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {{ $value }}
-                                                </td>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    {{ ucfirst(str_replace('_', ' ', $key)) }}
+                                                </th>
                                             @endif
                                         @endforeach
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('edit-data', ['table' => $tableName, 'id' => $row->id]) }}" class="text-indigo-600 hover:text-indigo-900">Editar</a>
-                                            <button onclick="confirmDelete(event, '{{ $tableName }}', {{ $row->id }})" class="text-red-600 hover:text-red-900 ml-4">Excluir</button>
-                                        </td>
+                                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Ações
+                                        </th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach ($data as $row)
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                <input type="checkbox" name="ids[]" value="{{ $row->id }}" class="checkItem">
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {{ $row->id }}
+                                            </td>
+                                            @foreach ((array)$row as $key => $value)
+                                                @if (!in_array($key, ['id', 'created_at', 'updated_at']))
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {{ $value }}
+                                                    </td>
+                                                @endif
+                                            @endforeach
+                                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                <a href="{{ route('edit-data', ['table' => $tableName, 'id' => $row->id]) }}" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Editar</a>
+                                                <button onclick="confirmDelete(event, '{{ $tableName }}', {{ $row->id }})" class="bg-red-500 hover:bg-red-700 text-white ml-4 py-2 px-4 rounded">Excluir</button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                            <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-medium py-2 px-4 rounded mt-4">
+                                Excluir Selecionados
+                            </button>
+                        </form>
                         {{ $data->links() }}
                     @endif
                 </div>
@@ -119,25 +132,26 @@
 </x-app-layout>
 
 <script>
-    function changePerPage() {
-        const selectedValue = document.getElementById('perPage').value;
-        const currentUrl = window.location.href;
-        const urlWithoutParams = currentUrl.split('?')[0];
-        const newUrl = urlWithoutParams + '?perPage=' + selectedValue;
-        window.location.href = newUrl;
-    }
+    document.getElementById('checkAll').addEventListener('change', function() {
+        let checkboxes = document.querySelectorAll('.checkItem');
+        for (let checkbox of checkboxes) {
+            checkbox.checked = this.checked;
+        }
+    });
 
     function confirmDelete(event, table, id) {
         event.preventDefault();
-        document.getElementById('deleteModal').classList.remove('hidden');
+        let modal = document.getElementById('deleteModal');
+        modal.classList.remove('hidden');
+
         document.getElementById('confirmButton').onclick = function() {
             deleteData(table, id);
         };
-    }
 
-    document.getElementById('cancelButton').addEventListener('click', function() {
-        document.getElementById('deleteModal').classList.add('hidden');
-    });
+        document.getElementById('cancelButton').addEventListener('click', function() {
+            modal.classList.add('hidden');
+        });
+    }
 
     function deleteData(table, id) {
         const form = document.createElement('form');
@@ -153,7 +167,7 @@
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
         csrfInput.name = '_token';
-        csrfInput.value = '{{ csrf_token() }}';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         form.appendChild(methodInput);
         form.appendChild(csrfInput);
