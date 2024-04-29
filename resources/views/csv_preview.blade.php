@@ -23,8 +23,15 @@
                     <p>{{ session('error') }}</p>
                 </div>
             @endif
-
                     <h1 class="text-lg font-bold mb-4">Pré-visualização dos Dados CSV</h1>
+                    <div class="mt-4">
+                        <form action="{{ route('import') }}" method="POST" class="inline-block">
+                            @csrf
+                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirmar Importação</button>
+                        </form>
+                        <a href="{{ route('cancel-import') }}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded inline-block ml-2">Cancelar Importação</a>
+                    </div>
+                    <br>
                     @if (!empty($data) && is_array($data))
                         <div class="overflow-x-auto">
                             <table class="min-w-full table-auto text-sm bg-white rounded-lg shadow overflow-hidden">
@@ -51,13 +58,6 @@
                     @else
                         <p>Não há dados para exibir ou o arquivo CSV estava vazio.</p>
                     @endif
-                    <div class="mt-4">
-                        <form action="{{ route('import') }}" method="POST" class="inline-block">
-                            @csrf
-                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Confirmar Importação</button>
-                        </form>
-                        <a href="{{ route('cancel-import') }}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded inline-block ml-2">Cancelar Importação</a>
-                    </div>
                 </div>
             </div>
         </div>

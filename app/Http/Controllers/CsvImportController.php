@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use League\Csv\Reader;
+use Illuminate\Support\Facades\DB;
 
 class CsvImportController extends Controller
 {
@@ -70,23 +71,29 @@ class CsvImportController extends Controller
     // Função para importar os dados do CSV para o banco de dados
     public function import()
     {
-        // Obter o nome do modelo, nome da tabela e dados do CSV da sessão
-        $modelName = session('csv_model_name');
-        $tableName = session('csv_table_name');
-        $csvData = session('csv_data');
-
-        // Construir o caminho completo para o modelo
-        $modelClass = 'App\\Models\\' . $modelName;
-        // Criar registros no banco de dados para cada linha do CSV
-        foreach ($csvData as $record) {
-            $modelClass::create($record);
+        try {
+            DB::beginTransaction();
+            // Obter o nome do modelo, nome da tabela e dados do CSV da sessão
+            $modelName = session('csv_model_name');
+            $tableName = session('csv_table_name');
+            $csvData = session('csv_data');
+    
+            // Construir o caminho completo para o modelo
+            $modelClass = 'App\\Models\\' . $modelName;
+            // Criar registros no banco de dados para cada linha do CSV
+            foreach ($csvData as $record) {
+                $modelClass::create($record);
+            }
+    
+            // Limpar os dados da sessão após a importação
+            session()->forget(['csv_model_name', 'csv_table_name', 'csv_data']);
+            DB::commit();
+    
+            // Redirecionar de volta à página inicial com uma mensagem de sucesso
+            return redirect('/')->with('success', 'Dados importados com sucesso!');
+        } catch (\Exception $e) {
+            DB::rollBack();
         }
-
-        // Limpar os dados da sessão após a importação
-        session()->forget(['csv_model_name', 'csv_table_name', 'csv_data']);
-
-        // Redirecionar de volta à página inicial com uma mensagem de sucesso
-        return redirect('/')->with('success', 'Dados importados com sucesso!');
     }
 
     // Função para cancelar a importação e remover os dados e tabelas relacionados
